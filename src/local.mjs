@@ -7,6 +7,7 @@ import path from 'node:path';
 import { launch } from './browser.mjs';
 import { scheduleInstagram } from './meta.mjs';
 import { scheduleTikTok } from './tiktok-studio.mjs';
+import { scheduleYouTube } from './youtube.mjs';
 import { metaSlots, tiktokSlots, slotKey } from './existing.mjs';
 import { ukParts } from './meta.mjs';
 
@@ -14,7 +15,7 @@ const GO = process.argv.includes('--go');
 const ONLY = process.argv.find((a) => a.startsWith('--only='))?.slice(7);
 const WEEK = fileURLToPath(new URL('../week/', import.meta.url));
 const STATE = fileURLToPath(new URL('../week/scheduled.json', import.meta.url));
-const SENDERS = { instagram: scheduleInstagram, tiktok: scheduleTikTok };
+const SENDERS = { instagram: scheduleInstagram, tiktok: scheduleTikTok, youtube: scheduleYouTube };
 
 // "2026-10-26 18:00" read as UK local time (handles the clock change), returned as an ISO instant.
 function ukLocalToIso(s) {
@@ -31,7 +32,8 @@ function ukLocalToIso(s) {
   return new Date(guess).toISOString();
 }
 
-const TAKEN = { instagram: metaSlots, tiktok: tiktokSlots };
+// YouTube cannot be read back with the saved API scope, so it relies on week/scheduled.json only
+const TAKEN = { instagram: metaSlots, tiktok: tiktokSlots, youtube: async () => new Set() };
 const taken = {};
 const state = JSON.parse(await readFile(STATE, 'utf8').catch(() => '{}'));
 const dirs = (await readdir(WEEK, { withFileTypes: true })).filter((d) => d.isDirectory() && !d.name.startsWith('_') && (!ONLY || d.name === ONLY));
@@ -55,7 +57,7 @@ for (const d of dirs) {
       const slot = slotKey(ukParts(new Date(post.publishAt)));
       if (taken[platform].has(slot)) { console.log(`skip ${key}: ${platform} already has something at ${slot}`); continue; }
       const res = await send(ctx, post, { go: GO });
-      if (GO && res.scheduled) {
+      if (GO && res.scheduled && platform !== 'youtube') {
         // trust but verify: the slot must now appear in the platform's own scheduled list
         const fresh = await TAKEN[platform](ctx);
         if (!fresh.has(slot)) throw new Error(`clicked Schedule but ${slot} is not in the ${platform} scheduled list. Check it by hand before retrying`);
