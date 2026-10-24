@@ -16,15 +16,31 @@ const WEEK = fileURLToPath(new URL('../week/', import.meta.url));
 const STATE = fileURLToPath(new URL('../week/scheduled.json', import.meta.url));
 const SENDERS = { instagram: scheduleInstagram, tiktok: scheduleTikTok };
 
+// "2026-10-26 18:00" read as UK local time (handles the clock change), returned as an ISO instant.
+function ukLocalToIso(s) {
+  const [d, t] = s.split(' ');
+  const [y, mo, da] = d.split('-').map(Number);
+  const [h, mi] = t.split(':').map(Number);
+  let guess = Date.UTC(y, mo - 1, da, h, mi);
+  for (let i = 0; i < 3; i++) {
+    const p = ukParts(new Date(guess));
+    const [pd, pm, py] = p.date.split('/').map(Number);
+    const shown = Date.UTC(py, pm - 1, pd, Number(p.hour), Number(p.minute));
+    guess += Date.UTC(y, mo - 1, da, h, mi) - shown;
+  }
+  return new Date(guess).toISOString();
+}
+
 const TAKEN = { instagram: metaSlots, tiktok: tiktokSlots };
 const taken = {};
 const state = JSON.parse(await readFile(STATE, 'utf8').catch(() => '{}'));
-const dirs = (await readdir(WEEK, { withFileTypes: true })).filter((d) => d.isDirectory() && (!ONLY || d.name === ONLY));
+const dirs = (await readdir(WEEK, { withFileTypes: true })).filter((d) => d.isDirectory() && !d.name.startsWith('_') && (!ONLY || d.name === ONLY));
 const ctx = await launch({ headless: true });
 let failed = false;
 
 for (const d of dirs) {
   const post = JSON.parse(await readFile(path.join(WEEK, d.name, 'post.json'), 'utf8'));
+  if (post.publishAtUK) post.publishAt = ukLocalToIso(post.publishAtUK);
   if (post.approved !== true) { console.log(`skip ${d.name}: not approved`); continue; }
   if (Date.parse(post.publishAt) < Date.now() + 15 * 60e3) { console.log(`skip ${d.name}: publishAt is in the past or under 15 min away`); continue; }
   post.files = post.files.map((f) => path.resolve(WEEK, d.name, f));
