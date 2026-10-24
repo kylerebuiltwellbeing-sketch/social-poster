@@ -1,0 +1,11 @@
+{
+  "approved": false,
+  "type": "carousel",
+  "platforms": ["instagram", "tiktok"],
+  "publishAt": "2026-10-25T18:00:00+01:00",
+  "caption": "Example caption.\n\n#example",
+  "mediaUrls": [
+    "https://media.example.com/example/1.jpg",
+    "https://media.example.com/example/2.jpg"
+  ]
+}

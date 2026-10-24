@@ -1,0 +1,10 @@
+{
+  "name": "social-poster",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dry": "node src/run.mjs --dry",
+    "post": "node src/run.mjs"
+  },
+  "engines": { "node": ">=20" }
+}
