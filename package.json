@@ -6,5 +6,24 @@
     "dry": "node src/run.mjs --dry",
     "post": "node src/run.mjs"
   },
-  "engines": { "node": ">=20" }
+  "engines": {
+    "node": ">=20"
+  },
+  "version": "1.0.0",
+  "description": "Weekly social scheduler for Instagram and TikTok",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kylerebuiltwellbeing-sketch/social-poster.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kylerebuiltwellbeing-sketch/social-poster/issues"
+  },
+  "homepage": "https://github.com/kylerebuiltwellbeing-sketch/social-poster#readme",
+  "dependencies": {
+    "playwright": "^1.64.1"
+  }
 }
