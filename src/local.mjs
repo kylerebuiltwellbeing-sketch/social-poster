@@ -7,6 +7,8 @@ import path from 'node:path';
 import { launch } from './browser.mjs';
 import { scheduleInstagram } from './meta.mjs';
 import { scheduleTikTok } from './tiktok-studio.mjs';
+import { metaSlots, tiktokSlots, slotKey } from './existing.mjs';
+import { ukParts } from './meta.mjs';
 
 const GO = process.argv.includes('--go');
 const ONLY = process.argv.find((a) => a.startsWith('--only='))?.slice(7);
@@ -14,6 +16,8 @@ const WEEK = fileURLToPath(new URL('../week/', import.meta.url));
 const STATE = fileURLToPath(new URL('../week/scheduled.json', import.meta.url));
 const SENDERS = { instagram: scheduleInstagram, tiktok: scheduleTikTok };
 
+const TAKEN = { instagram: metaSlots, tiktok: tiktokSlots };
+const taken = {};
 const state = JSON.parse(await readFile(STATE, 'utf8').catch(() => '{}'));
 const dirs = (await readdir(WEEK, { withFileTypes: true })).filter((d) => d.isDirectory() && (!ONLY || d.name === ONLY));
 const ctx = await launch({ headless: true });
@@ -30,9 +34,13 @@ for (const d of dirs) {
     const send = SENDERS[platform];
     if (!send) { console.log(`skip ${key}: no scheduler built for ${platform} yet`); continue; }
     try {
+      // never double-book: read what the platform already has scheduled, skip an occupied slot
+      taken[platform] ??= await TAKEN[platform](ctx);
+      const slot = slotKey(ukParts(new Date(post.publishAt)));
+      if (taken[platform].has(slot)) { console.log(`skip ${key}: ${platform} already has something at ${slot}`); continue; }
       const res = await send(ctx, post, { go: GO });
       console.log(`${GO ? 'SCHEDULED' : 'DRY'} ${key}`, JSON.stringify(res));
-      if (GO && res.scheduled) { state[key] = { at: new Date().toISOString(), publishAt: post.publishAt }; await writeFile(STATE, JSON.stringify(state, null, 2)); }
+      if (GO && res.scheduled) { taken[platform].add(slot); state[key] = { at: new Date().toISOString(), publishAt: post.publishAt }; await writeFile(STATE, JSON.stringify(state, null, 2)); }
     } catch (e) {
       console.error(`FAIL ${key}: ${e.message.split('\n')[0]}`);
       failed = true;

@@ -51,6 +51,10 @@ export async function scheduleInstagram(ctx, post, { go = false } = {}) {
     const text = (await page.locator('body').innerText()).replace(/[\s​]+/g, ' ');
     const t = text.match(/Time input (\d{1,2}) : (\d{1,2})/);
     const shown = { date: await dateBox.inputValue(), time: t ? `${t[1]}:${t[2]}` : 'not found' };
+    const dm = shown.date.match(/^(\d{1,2}) (\w+) (\d{4})$/);
+    const MON = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const [wd, wm, wy] = date.split('/').map(Number);
+    if (!dm || Number(dm[1]) !== wd || dm[2] !== MON[wm - 1] || Number(dm[3]) !== wy) throw new Error(`date not set, wanted ${date}, page shows "${shown.date}"`);
     if (!t && process.env.DEBUG_META) console.log('TEXT:', text.match(/Schedule Set date.{0,260}/)?.[0]);
     if (!t || pad(+t[1]) !== hour || pad(+t[2]) !== minute) throw new Error(`time not set, wanted ${hour}:${minute}, page shows ${shown.time}`);
     if (!go) return { stoppedBeforeSchedule: true, want: { date, hour, minute }, shown };
