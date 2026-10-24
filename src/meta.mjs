@@ -59,7 +59,7 @@ export async function scheduleInstagram(ctx, post, { go = false } = {}) {
     if (!t || pad(+t[1]) !== hour || pad(+t[2]) !== minute) throw new Error(`time not set, wanted ${hour}:${minute}, page shows ${shown.time}`);
     if (!go) return { stoppedBeforeSchedule: true, want: { date, hour, minute }, shown };
 
-    await page.getByRole('button', { name: 'Schedule', exact: true }).or(page.getByText('Schedule', { exact: true }).last()).click();
+    await page.getByRole('button', { name: 'Schedule', exact: true }).last().click();
     await page.waitForTimeout(8000);
     return { scheduled: true, want: { date, hour, minute }, shown };
   } finally {

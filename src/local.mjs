@@ -39,6 +39,11 @@ for (const d of dirs) {
       const slot = slotKey(ukParts(new Date(post.publishAt)));
       if (taken[platform].has(slot)) { console.log(`skip ${key}: ${platform} already has something at ${slot}`); continue; }
       const res = await send(ctx, post, { go: GO });
+      if (GO && res.scheduled) {
+        // trust but verify: the slot must now appear in the platform's own scheduled list
+        const fresh = await TAKEN[platform](ctx);
+        if (!fresh.has(slot)) throw new Error(`clicked Schedule but ${slot} is not in the ${platform} scheduled list. Check it by hand before retrying`);
+      }
       console.log(`${GO ? 'SCHEDULED' : 'DRY'} ${key}`, JSON.stringify(res));
       if (GO && res.scheduled) { taken[platform].add(slot); state[key] = { at: new Date().toISOString(), publishAt: post.publishAt }; await writeFile(STATE, JSON.stringify(state, null, 2)); }
     } catch (e) {
